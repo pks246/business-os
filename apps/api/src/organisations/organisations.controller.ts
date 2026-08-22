@@ -15,9 +15,9 @@ export class OrganisationsController {
     @Body()
     body: {
       name: string;
-      businessType: string;
+      templateId: string;
     },
   ) {
-    return this.organisationsService.create(body.name, body.businessType);
+    return this.organisationsService.create(body.name, body.templateId);
   }
 }
