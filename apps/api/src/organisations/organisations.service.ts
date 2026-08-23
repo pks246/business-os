@@ -1,30 +1,27 @@
-import { Injectable } from '@nestjs/common';
-import { Organisation } from './organisation';
+import { BadRequestException, Injectable } from '@nestjs/common';
+import { PrismaService } from '../database/prisma.service';
 import { getBusinessTemplate } from '../templates/template-registry';
 
 @Injectable()
 export class OrganisationsService {
-  private organisations: Organisation[] = [];
+  constructor(private readonly prisma: PrismaService) {}
 
-  findAll(): Organisation[] {
-    return this.organisations;
+  findAll() {
+    return this.prisma.organisation.findMany();
   }
 
-  create(name: string, templateId: string): Organisation {
+  create(name: string, templateId: string) {
     const template = getBusinessTemplate(templateId);
 
     if (!template) {
-      throw new Error('Unknown business template');
+      throw new BadRequestException(`Unknown business template: ${templateId}`);
     }
 
-    const organisation: Organisation = {
-      id: crypto.randomUUID(),
-      name,
-      templateId,
-    };
-
-    this.organisations.push(organisation);
-
-    return organisation;
+    return this.prisma.organisation.create({
+      data: {
+        name,
+        templateId,
+      },
+    });
   }
 }
