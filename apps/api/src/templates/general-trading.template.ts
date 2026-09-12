@@ -1,8 +1,8 @@
 import { BusinessTemplate } from '../platform/business-template';
 
-export const restaurantTemplate: BusinessTemplate = {
-  id: 'restaurant',
-  name: 'Restaurant',
+export const generalTradingTemplate: BusinessTemplate = {
+  id: 'general-trading',
+  name: 'General Trading',
 
   modules: [
     {
@@ -19,10 +19,6 @@ export const restaurantTemplate: BusinessTemplate = {
     },
     {
       id: 'payments',
-      enabled: true,
-    },
-    {
-      id: 'bookings',
       enabled: true,
     },
   ],
