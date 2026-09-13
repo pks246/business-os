@@ -14,6 +14,7 @@ describe('OrganisationsService', () => {
           useValue: {
             organisation: {
               findMany: jest.fn(),
+              findUnique: jest.fn(),
               create: jest.fn(),
             },
           },

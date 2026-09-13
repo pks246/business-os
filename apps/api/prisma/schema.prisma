@@ -14,9 +14,24 @@ datasource db {
 }
 
 model Organisation {
-  id         String   @id @default(uuid())
+  id         String               @id @default(uuid())
   name       String
   templateId String
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  createdAt  DateTime             @default(now())
+  updatedAt  DateTime             @updatedAt
+  modules    OrganisationModule[]
+}
+
+model OrganisationModule {
+  id             String       @id @default(uuid())
+  organisationId String
+  moduleId       String
+  enabled        Boolean
+  settings       Json?
+
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+
+  @@unique([organisationId, moduleId])
+  @@index([organisationId])
+  @@index([moduleId])
 }

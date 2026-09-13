@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../database/prisma.service';
 import { getBusinessTemplate } from '../templates/template-registry';
 
@@ -21,7 +25,42 @@ export class OrganisationsService {
       data: {
         name,
         templateId,
+
+        modules: {
+          create: template.modules.map((moduleConfig) => ({
+            moduleId: moduleConfig.id,
+            enabled: moduleConfig.enabled,
+            settings: moduleConfig.settings ?? {},
+          })),
+        },
+      },
+
+      include: {
+        modules: true,
       },
     });
+  }
+
+  async getConfiguration(organisationId: string) {
+    const organisation = await this.prisma.organisation.findUnique({
+      where: {
+        id: organisationId,
+      },
+
+      include: {
+        modules: true,
+      },
+    });
+
+    if (!organisation) {
+      throw new NotFoundException(`Organisation not found: ${organisationId}`);
+    }
+
+    return {
+      id: organisation.id,
+      name: organisation.name,
+      templateId: organisation.templateId,
+      modules: organisation.modules,
+    };
   }
 }

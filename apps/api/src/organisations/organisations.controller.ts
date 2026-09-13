@@ -1,4 +1,11 @@
-import { Body, Controller, Get, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  ParseUUIDPipe,
+  Post,
+} from '@nestjs/common';
 import { CreateOrganisationDto } from './dto/create-organisation.dto';
 import { OrganisationsService } from './organisations.service';
 
@@ -9,6 +16,11 @@ export class OrganisationsController {
   @Get()
   findAll() {
     return this.organisationsService.findAll();
+  }
+
+  @Get(':id/configuration')
+  getConfiguration(@Param('id', new ParseUUIDPipe()) organisationId: string) {
+    return this.organisationsService.getConfiguration(organisationId);
   }
 
   @Post()

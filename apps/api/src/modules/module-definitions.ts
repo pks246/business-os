@@ -7,7 +7,6 @@ export function registerPlatformModules(): void {
     return;
   }
 
-  registered = true;
   registerModule({
     id: 'customers',
     name: 'Customers',
@@ -46,4 +45,5 @@ export function registerPlatformModules(): void {
     description: 'Manage recurring memberships and membership status.',
     dependencies: ['customers'],
   });
+  registered = true;
 }
