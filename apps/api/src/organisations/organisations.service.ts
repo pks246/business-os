@@ -3,8 +3,15 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { Prisma } from '../generated/prisma/client.js';
 import { PrismaService } from '../database/prisma.service';
+import {
+  getModule,
+  getModules as getRegisteredModules,
+} from '../platform/modules/module-registry';
+import { validateModuleConfigurations } from '../platform/templates/validate-template';
 import { getBusinessTemplate } from '../templates/template-registry';
+import { UpdateOrganisationModuleDto } from './dto/update-organisation-module.dto';
 
 @Injectable()
 export class OrganisationsService {
@@ -62,5 +69,121 @@ export class OrganisationsService {
       templateId: organisation.templateId,
       modules: organisation.modules,
     };
+  }
+
+  async getModules(organisationId: string) {
+    const organisation = await this.prisma.organisation.findUnique({
+      where: {
+        id: organisationId,
+      },
+
+      include: {
+        modules: true,
+      },
+    });
+
+    if (!organisation) {
+      throw new NotFoundException(`Organisation not found: ${organisationId}`);
+    }
+
+    const configuredModules = new Map(
+      organisation.modules.map((moduleConfig) => [
+        moduleConfig.moduleId,
+        moduleConfig,
+      ]),
+    );
+
+    return getRegisteredModules().map((moduleDefinition) => {
+      const configuration = configuredModules.get(moduleDefinition.id);
+
+      return {
+        id: moduleDefinition.id,
+        name: moduleDefinition.name,
+        description: moduleDefinition.description,
+        dependencies: moduleDefinition.dependencies ?? [],
+        configured: configuration !== undefined,
+        enabled: configuration?.enabled ?? false,
+        settings: configuration?.settings ?? null,
+      };
+    });
+  }
+
+  async updateModule(
+    organisationId: string,
+    moduleId: string,
+    dto: UpdateOrganisationModuleDto,
+  ) {
+    const moduleDefinition = getModule(moduleId);
+
+    if (!moduleDefinition) {
+      throw new BadRequestException(`Unknown platform module: ${moduleId}`);
+    }
+
+    return this.prisma.$transaction(async (transaction) => {
+      const organisation = await transaction.organisation.findUnique({
+        where: {
+          id: organisationId,
+        },
+
+        include: {
+          modules: true,
+        },
+      });
+
+      if (!organisation) {
+        throw new NotFoundException(
+          `Organisation not found: ${organisationId}`,
+        );
+      }
+
+      const configurations = organisation.modules.map((organisationModule) => ({
+        id: organisationModule.moduleId,
+        enabled: organisationModule.enabled,
+      }));
+
+      const existingConfiguration = configurations.find(
+        (configuration) => configuration.id === moduleId,
+      );
+
+      if (existingConfiguration) {
+        existingConfiguration.enabled = dto.enabled;
+      } else {
+        configurations.push({
+          id: moduleId,
+          enabled: dto.enabled,
+        });
+      }
+
+      validateModuleConfigurations(
+        configurations,
+        `Organisation "${organisationId}"`,
+      );
+
+      const updateData: Prisma.OrganisationModuleUpdateInput = {
+        enabled: dto.enabled,
+      };
+
+      if (dto.settings !== undefined) {
+        updateData.settings = dto.settings;
+      }
+
+      return transaction.organisationModule.upsert({
+        where: {
+          organisationId_moduleId: {
+            organisationId,
+            moduleId,
+          },
+        },
+
+        update: updateData,
+
+        create: {
+          organisationId,
+          moduleId,
+          enabled: dto.enabled,
+          settings: dto.settings ?? {},
+        },
+      });
+    });
   }
 }

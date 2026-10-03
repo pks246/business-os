@@ -5,7 +5,7 @@ export interface ConfigObject {
   [key: string]: ConfigValue;
 }
 
-export interface TemplateModuleConfig {
+export interface ModuleConfig {
   id: string;
   enabled: boolean;
   settings?: ConfigObject;
@@ -14,5 +14,5 @@ export interface TemplateModuleConfig {
 export interface BusinessTemplate {
   id: string;
   name: string;
-  modules: TemplateModuleConfig[];
+  modules: ModuleConfig[];
 }

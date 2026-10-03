@@ -6,18 +6,21 @@ describe('OrganisationsService', () => {
   let service: OrganisationsService;
 
   beforeEach(async () => {
+    const prismaMock = {
+      organisation: {
+        findMany: jest.fn(),
+        findUnique: jest.fn(),
+        create: jest.fn(),
+      },
+      $transaction: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         OrganisationsService,
         {
           provide: PrismaService,
-          useValue: {
-            organisation: {
-              findMany: jest.fn(),
-              findUnique: jest.fn(),
-              create: jest.fn(),
-            },
-          },
+          useValue: prismaMock,
         },
       ],
     }).compile();
