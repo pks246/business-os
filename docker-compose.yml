@@ -1,0 +1,18 @@
+services:
+  postgres:
+    image: postgres:17
+    container_name: business-os-postgres
+
+    environment:
+      POSTGRES_USER: businessos
+      POSTGRES_PASSWORD: businessos
+      POSTGRES_DB: businessos
+
+    ports:
+      - "5433:5432"
+
+    volumes:
+      - business-os-postgres-data:/var/lib/postgresql/data
+
+volumes:
+  business-os-postgres-data:
