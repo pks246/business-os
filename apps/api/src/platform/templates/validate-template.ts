@@ -1,5 +1,9 @@
-import { BusinessTemplate } from '../business-template';
+import {
+  BusinessTemplate,
+  TemplatePartyRoleConfig,
+} from '../business-template';
 import { getModule, hasModule } from '../modules/module-registry';
+import { hasPartyRole, getPartyRole } from '../parties/party-role-registry';
 
 export function validateModuleConfigurations(
   configurations: Array<{ id: string; enabled: boolean }>,
@@ -44,6 +48,36 @@ export function validateModuleConfigurations(
   }
 }
 
+export function validatePartyRoleConfigurations(
+  configurations: TemplatePartyRoleConfig[],
+  context: string,
+): void {
+  const configuredRoleIds = new Set<string>();
+
+  for (const roleConfig of configurations) {
+    if (configuredRoleIds.has(roleConfig.roleId)) {
+      throw new Error(
+        `${context} contains duplicate party role "${roleConfig.roleId}"`,
+      );
+    }
+
+    configuredRoleIds.add(roleConfig.roleId);
+
+    if (!hasPartyRole(roleConfig.roleId)) {
+      throw new Error(
+        `${context} references unknown party role "${roleConfig.roleId}"`,
+      );
+    }
+
+    getPartyRole(roleConfig.roleId);
+  }
+}
+
 export function validateBusinessTemplate(template: BusinessTemplate): void {
   validateModuleConfigurations(template.modules, `Template "${template.id}"`);
+
+  validatePartyRoleConfigurations(
+    template.partyRoles ?? [],
+    `Template "${template.id}"`,
+  );
 }

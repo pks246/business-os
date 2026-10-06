@@ -26,4 +26,16 @@ export const restaurantTemplate: BusinessTemplate = {
       enabled: true,
     },
   ],
+  partyRoles: [
+    {
+      roleId: 'customer',
+      enabled: true,
+      captureMode: 'optional',
+    },
+    {
+      roleId: 'employee',
+      enabled: true,
+      captureMode: 'optional',
+    },
+  ],
 };

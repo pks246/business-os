@@ -22,4 +22,21 @@ export const generalTradingTemplate: BusinessTemplate = {
       enabled: true,
     },
   ],
+  partyRoles: [
+    {
+      roleId: 'customer',
+      enabled: true,
+      captureMode: 'required',
+    },
+    {
+      roleId: 'supplier',
+      enabled: true,
+      captureMode: 'required',
+    },
+    {
+      roleId: 'employee',
+      enabled: true,
+      captureMode: 'optional',
+    },
+  ],
 };

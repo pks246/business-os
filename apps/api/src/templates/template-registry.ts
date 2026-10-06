@@ -4,8 +4,10 @@ import { registerPlatformModules } from '../modules/module-definitions';
 import { generalTradingTemplate } from './general-trading.template';
 import { gymTemplate } from './gym.template';
 import { restaurantTemplate } from './restaurant.template';
+import { registerPlatformPartyRoles } from '../parties/party-role-definitions';
 
 registerPlatformModules();
+registerPlatformPartyRoles();
 
 const templates: BusinessTemplate[] = [
   gymTemplate,

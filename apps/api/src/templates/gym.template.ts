@@ -22,4 +22,17 @@ export const gymTemplate: BusinessTemplate = {
       enabled: true,
     },
   ],
+
+  partyRoles: [
+    {
+      roleId: 'customer',
+      enabled: true,
+      captureMode: 'optional',
+    },
+    {
+      roleId: 'member',
+      enabled: true,
+      captureMode: 'required',
+    },
+  ],
 };
