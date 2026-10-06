@@ -5,10 +5,7 @@ import {
 } from '@nestjs/common';
 import { Prisma } from '../generated/prisma/client.js';
 import { PrismaService } from '../database/prisma.service';
-import {
-  getPartyRole,
-  getPartyRoles,
-} from '../platform/parties/party-role-registry';
+import { getPartyRole } from '../platform/parties/party-role-registry';
 import { getBusinessTemplate } from '../templates/template-registry';
 import { AssignPartyRoleDto } from './dto/assign-party-role.dto';
 import { CreatePartyDto } from './dto/create-party.dto';
@@ -112,8 +109,26 @@ export class PartiesService {
     });
   }
 
-  getAvailableRoles() {
-    return getPartyRoles();
+  async getAvailableRoles(organisationId: string) {
+    const template = await this.getOrganisationTemplate(organisationId);
+
+    return (template.partyRoles ?? [])
+      .filter((configuration) => configuration.enabled)
+      .map((configuration) => {
+        const role = getPartyRole(configuration.roleId);
+
+        if (!role) {
+          throw new BadRequestException(
+            `Unknown party role: ${configuration.roleId}`,
+          );
+        }
+
+        return {
+          ...role,
+          captureMode: configuration.captureMode,
+          settings: configuration.settings ?? null,
+        };
+      });
   }
 
   private async ensureOrganisationExists(

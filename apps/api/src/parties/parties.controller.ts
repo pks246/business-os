@@ -23,8 +23,11 @@ export class PartiesController {
   }
 
   @Get('available-roles')
-  getAvailableRoles() {
-    return this.partiesService.getAvailableRoles();
+  getAvailableRoles(
+    @Param('organisationId', new ParseUUIDPipe())
+    organisationId: string,
+  ) {
+    return this.partiesService.getAvailableRoles(organisationId);
   }
 
   @Get(':partyId')

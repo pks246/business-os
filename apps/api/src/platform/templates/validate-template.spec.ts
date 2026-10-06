@@ -1,8 +1,8 @@
+import { registerPlatformModules } from '../../modules/module-definitions';
 import {
   validateBusinessTemplate,
   validateModuleConfigurations,
 } from './validate-template';
-import { registerPlatformModules } from '../../modules/module-definitions';
 
 describe('template validation', () => {
   beforeAll(() => {
@@ -77,7 +77,7 @@ describe('template validation', () => {
     ).toThrow();
   });
 
-  it('allows a disabled module with a disabled dependency', () => {
+  it('allows disabled dependent modules', () => {
     expect(() =>
       validateModuleConfigurations(
         [
