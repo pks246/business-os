@@ -6,6 +6,7 @@ import { DatabaseModule } from './database/database.module';
 import { OrganisationsModule } from './organisations/organisations.module';
 import { TemplatesModule } from './templates/templates.module';
 import { PartiesModule } from './parties/parties.module';
+import { PartyContactDetailsModule } from './party-contact-details/party-contact-details.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { PartiesModule } from './parties/parties.module';
     OrganisationsModule,
     TemplatesModule,
     PartiesModule,
+    PartyContactDetailsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

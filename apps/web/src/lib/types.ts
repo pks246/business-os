@@ -64,3 +64,33 @@ export interface PartyRoleDefinition {
   captureMode: 'optional' | 'required';
   settings: Record<string, unknown> | null;
 }
+
+export interface PartyContactMethod {
+  id: string;
+  partyId: string;
+  channel: string;
+  value: string;
+  label: string | null;
+  isPrimary: boolean;
+  verifiedAt: string | null;
+  metadata: Record<string, unknown> | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PartyAddress {
+  id: string;
+  partyId: string;
+  type: string;
+  label: string | null;
+  line1: string;
+  line2: string | null;
+  city: string;
+  state: string | null;
+  postalCode: string | null;
+  countryCode: string;
+  isPrimary: boolean;
+  metadata: Record<string, unknown> | null;
+  createdAt: string;
+  updatedAt: string;
+}

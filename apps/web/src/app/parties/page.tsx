@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useState } from 'react';
 import { apiFetch } from '@/lib/api';
+import { PartyContactDetails } from '@/components/party-contact-details';
 import type {
   Organisation,
   Party,
@@ -419,6 +420,13 @@ export default function PartiesPage() {
             )}
           </div>
         </section>
+
+        {selectedParty && selectedOrganisationId && (
+          <PartyContactDetails
+            organisationId={selectedOrganisationId}
+            partyId={selectedParty.id}
+          />
+        )}
       </div>
     </main>
   );

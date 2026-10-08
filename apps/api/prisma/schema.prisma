@@ -54,9 +54,51 @@ model Party {
   organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
 
   roleAssignments PartyRoleAssignment[]
+  contactMethods   PartyContactMethod[]
+  addresses       PartyAddress[]
 
   @@index([organisationId])
   @@index([organisationId, displayName])
+}
+
+model PartyContactMethod {
+  id         String   @id @default(uuid())
+  partyId    String
+  channel    String
+  value      String
+  label      String?
+  isPrimary  Boolean  @default(false)
+  verifiedAt DateTime?
+  metadata   Json?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  party Party @relation(fields: [partyId], references: [id], onDelete: Cascade)
+
+  @@index([partyId])
+  @@index([partyId, channel])
+}
+
+model PartyAddress {
+  id          String   @id @default(uuid())
+  partyId     String
+  type        String
+  label       String?
+  line1       String
+  line2       String?
+  city        String
+  state       String?
+  postalCode  String?
+  countryCode String
+  isPrimary   Boolean  @default(false)
+  metadata    Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  party Party @relation(fields: [partyId], references: [id], onDelete: Cascade)
+
+  @@index([partyId])
+  @@index([partyId, type])
 }
 
 model PartyRoleAssignment {
