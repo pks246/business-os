@@ -1,6 +1,8 @@
 import { PartiesService } from './parties.service';
 import { PrismaService } from '../database/prisma.service';
 import { PartyType } from '../generated/prisma/enums.js';
+import { OrganisationModuleAccessService } from '../organisations/organisation-module-access.service';
+import { NotFoundException } from '@nestjs/common';
 
 describe('PartiesService', () => {
   let service: PartiesService;
@@ -21,10 +23,22 @@ describe('PartiesService', () => {
     },
   };
 
+  const moduleAccessMock = {
+    ensureModuleEnabled: jest.fn(),
+  };
+
   beforeEach(() => {
     jest.clearAllMocks();
-
-    service = new PartiesService(prismaMock as unknown as PrismaService);
+    moduleAccessMock.ensureModuleEnabled.mockResolvedValue({
+      enabled: true,
+      settings: null,
+      source: 'template',
+      templateId: 'restaurant',
+    });
+    service = new PartiesService(
+      prismaMock as unknown as PrismaService,
+      moduleAccessMock as unknown as OrganisationModuleAccessService,
+    );
   });
 
   describe('findAll', () => {
@@ -84,6 +98,10 @@ describe('PartiesService', () => {
       });
 
       expect(result).toEqual(createdParty);
+      expect(moduleAccessMock.ensureModuleEnabled).toHaveBeenCalledWith(
+        'org-1',
+        'parties',
+      );
 
       expect(prismaMock.party.create).toHaveBeenCalledWith({
         data: {
@@ -98,7 +116,9 @@ describe('PartiesService', () => {
     });
 
     it('rejects creation for an unknown organisation', async () => {
-      prismaMock.organisation.findUnique.mockResolvedValue(null);
+      moduleAccessMock.ensureModuleEnabled.mockRejectedValueOnce(
+        new NotFoundException('Organisation not found'),
+      );
 
       await expect(
         service.create('unknown-org', {
@@ -152,6 +172,10 @@ describe('PartiesService', () => {
       });
 
       expect(result).toEqual(assignment);
+      expect(moduleAccessMock.ensureModuleEnabled).toHaveBeenCalledWith(
+        'org-1',
+        'parties',
+      );
 
       expect(prismaMock.partyRoleAssignment.create).toHaveBeenCalled();
     });

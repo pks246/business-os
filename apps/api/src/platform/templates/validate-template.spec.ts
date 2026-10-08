@@ -14,6 +14,10 @@ describe('template validation', () => {
       validateModuleConfigurations(
         [
           {
+            id: 'parties',
+            enabled: true,
+          },
+          {
             id: 'customers',
             enabled: true,
           },
@@ -64,8 +68,12 @@ describe('template validation', () => {
       validateModuleConfigurations(
         [
           {
-            id: 'customers',
+            id: 'parties',
             enabled: false,
+          },
+          {
+            id: 'customers',
+            enabled: true,
           },
           {
             id: 'orders',
@@ -81,6 +89,10 @@ describe('template validation', () => {
     expect(() =>
       validateModuleConfigurations(
         [
+          {
+            id: 'parties',
+            enabled: false,
+          },
           {
             id: 'customers',
             enabled: false,
@@ -101,6 +113,10 @@ describe('template validation', () => {
         id: 'test',
         name: 'Test',
         modules: [
+          {
+            id: 'parties',
+            enabled: true,
+          },
           {
             id: 'customers',
             enabled: true,

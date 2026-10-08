@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { Prisma } from '../generated/prisma/client.js';
 import { PrismaService } from '../database/prisma.service';
+import { OrganisationModuleAccessService } from '../organisations/organisation-module-access.service';
 import { getPartyRole } from '../platform/parties/party-role-registry';
 import { getBusinessTemplate } from '../templates/template-registry';
 import { AssignPartyRoleDto } from './dto/assign-party-role.dto';
@@ -12,10 +13,13 @@ import { CreatePartyDto } from './dto/create-party.dto';
 
 @Injectable()
 export class PartiesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly moduleAccess: OrganisationModuleAccessService,
+  ) {}
 
   async findAll(organisationId: string) {
-    await this.ensureOrganisationExists(organisationId);
+    await this.moduleAccess.ensureModuleEnabled(organisationId, 'parties');
 
     return this.prisma.party.findMany({
       where: {
@@ -31,6 +35,8 @@ export class PartiesService {
   }
 
   async findOne(organisationId: string, partyId: string) {
+    await this.moduleAccess.ensureModuleEnabled(organisationId, 'parties');
+
     const party = await this.prisma.party.findFirst({
       where: {
         id: partyId,
@@ -49,7 +55,7 @@ export class PartiesService {
   }
 
   async create(organisationId: string, dto: CreatePartyDto) {
-    await this.ensureOrganisationExists(organisationId);
+    await this.moduleAccess.ensureModuleEnabled(organisationId, 'parties');
 
     return this.prisma.party.create({
       data: {
@@ -68,13 +74,18 @@ export class PartiesService {
     partyId: string,
     dto: AssignPartyRoleDto,
   ) {
+    const moduleConfiguration = await this.moduleAccess.ensureModuleEnabled(
+      organisationId,
+      'parties',
+    );
+
     const role = getPartyRole(dto.roleId);
 
     if (!role) {
       throw new BadRequestException(`Unknown party role: ${dto.roleId}`);
     }
 
-    const template = await this.getOrganisationTemplate(organisationId);
+    const template = this.getTemplate(moduleConfiguration.templateId);
 
     const roleConfiguration = template.partyRoles?.find(
       (configuration) => configuration.roleId === dto.roleId,
@@ -110,7 +121,12 @@ export class PartiesService {
   }
 
   async getAvailableRoles(organisationId: string) {
-    const template = await this.getOrganisationTemplate(organisationId);
+    const moduleConfiguration = await this.moduleAccess.ensureModuleEnabled(
+      organisationId,
+      'parties',
+    );
+
+    const template = this.getTemplate(moduleConfiguration.templateId);
 
     return (template.partyRoles ?? [])
       .filter((configuration) => configuration.enabled)
@@ -131,36 +147,12 @@ export class PartiesService {
       });
   }
 
-  private async ensureOrganisationExists(
-    organisationId: string,
-  ): Promise<void> {
-    const organisation = await this.prisma.organisation.findUnique({
-      where: {
-        id: organisationId,
-      },
-    });
-
-    if (!organisation) {
-      throw new NotFoundException(`Organisation not found: ${organisationId}`);
-    }
-  }
-
-  private async getOrganisationTemplate(organisationId: string) {
-    const organisation = await this.prisma.organisation.findUnique({
-      where: {
-        id: organisationId,
-      },
-    });
-
-    if (!organisation) {
-      throw new NotFoundException(`Organisation not found: ${organisationId}`);
-    }
-
-    const template = getBusinessTemplate(organisation.templateId);
+  private getTemplate(templateId: string) {
+    const template = getBusinessTemplate(templateId);
 
     if (!template) {
       throw new BadRequestException(
-        `Organisation uses unknown template: ${organisation.templateId}`,
+        `Organisation uses unknown template: ${templateId}`,
       );
     }
 

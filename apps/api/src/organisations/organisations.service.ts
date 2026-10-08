@@ -86,6 +86,14 @@ export class OrganisationsService {
       throw new NotFoundException(`Organisation not found: ${organisationId}`);
     }
 
+    const template = getBusinessTemplate(organisation.templateId);
+
+    if (!template) {
+      throw new BadRequestException(
+        `Organisation uses unknown template: ${organisation.templateId}`,
+      );
+    }
+
     const configuredModules = new Map(
       organisation.modules.map((moduleConfig) => [
         moduleConfig.moduleId,
@@ -94,16 +102,28 @@ export class OrganisationsService {
     );
 
     return getRegisteredModules().map((moduleDefinition) => {
-      const configuration = configuredModules.get(moduleDefinition.id);
+      const organisationConfiguration = configuredModules.get(
+        moduleDefinition.id,
+      );
+
+      const templateConfiguration = template.modules.find(
+        (module) => module.id === moduleDefinition.id,
+      );
 
       return {
         id: moduleDefinition.id,
         name: moduleDefinition.name,
         description: moduleDefinition.description,
         dependencies: moduleDefinition.dependencies ?? [],
-        configured: configuration !== undefined,
-        enabled: configuration?.enabled ?? false,
-        settings: configuration?.settings ?? null,
+        configured: organisationConfiguration !== undefined,
+        enabled:
+          organisationConfiguration?.enabled ??
+          templateConfiguration?.enabled ??
+          false,
+        settings:
+          organisationConfiguration?.settings ??
+          templateConfiguration?.settings ??
+          null,
       };
     });
   }
@@ -136,10 +156,29 @@ export class OrganisationsService {
         );
       }
 
-      const configurations = organisation.modules.map((organisationModule) => ({
-        id: organisationModule.moduleId,
-        enabled: organisationModule.enabled,
-      }));
+      const template = getBusinessTemplate(organisation.templateId);
+
+      if (!template) {
+        throw new BadRequestException(
+          `Organisation uses unknown template: ${organisation.templateId}`,
+        );
+      }
+
+      const persistedConfigurations = new Map(
+        organisation.modules.map((organisationModule) => [
+          organisationModule.moduleId,
+          organisationModule,
+        ]),
+      );
+
+      const configurations = template.modules.map((templateModule) => {
+        const persisted = persistedConfigurations.get(templateModule.id);
+
+        return {
+          id: templateModule.id,
+          enabled: persisted?.enabled ?? templateModule.enabled,
+        };
+      });
 
       const existingConfiguration = configurations.find(
         (configuration) => configuration.id === moduleId,
