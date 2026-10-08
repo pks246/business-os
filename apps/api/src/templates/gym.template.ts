@@ -6,6 +6,14 @@ export const gymTemplate: BusinessTemplate = {
 
   modules: [
     {
+      id: 'parties',
+      enabled: true,
+    },
+    {
+      id: 'contacts',
+      enabled: true,
+    },
+    {
       id: 'customers',
       enabled: true,
     },
@@ -20,6 +28,19 @@ export const gymTemplate: BusinessTemplate = {
     {
       id: 'payments',
       enabled: true,
+    },
+  ],
+
+  partyRoles: [
+    {
+      roleId: 'customer',
+      enabled: true,
+      captureMode: 'optional',
+    },
+    {
+      roleId: 'member',
+      enabled: true,
+      captureMode: 'required',
     },
   ],
 };

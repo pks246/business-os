@@ -1,8 +1,8 @@
+import { registerPlatformModules } from '../../modules/module-definitions';
 import {
   validateBusinessTemplate,
   validateModuleConfigurations,
 } from './validate-template';
-import { registerPlatformModules } from '../../modules/module-definitions';
 
 describe('template validation', () => {
   beforeAll(() => {
@@ -13,6 +13,10 @@ describe('template validation', () => {
     expect(() =>
       validateModuleConfigurations(
         [
+          {
+            id: 'parties',
+            enabled: true,
+          },
           {
             id: 'customers',
             enabled: true,
@@ -64,8 +68,12 @@ describe('template validation', () => {
       validateModuleConfigurations(
         [
           {
-            id: 'customers',
+            id: 'parties',
             enabled: false,
+          },
+          {
+            id: 'customers',
+            enabled: true,
           },
           {
             id: 'orders',
@@ -77,10 +85,14 @@ describe('template validation', () => {
     ).toThrow();
   });
 
-  it('allows a disabled module with a disabled dependency', () => {
+  it('allows disabled dependent modules', () => {
     expect(() =>
       validateModuleConfigurations(
         [
+          {
+            id: 'parties',
+            enabled: false,
+          },
           {
             id: 'customers',
             enabled: false,
@@ -101,6 +113,10 @@ describe('template validation', () => {
         id: 'test',
         name: 'Test',
         modules: [
+          {
+            id: 'parties',
+            enabled: true,
+          },
           {
             id: 'customers',
             enabled: true,

@@ -6,6 +6,14 @@ export const restaurantTemplate: BusinessTemplate = {
 
   modules: [
     {
+      id: 'parties',
+      enabled: true,
+    },
+    {
+      id: 'contacts',
+      enabled: true,
+    },
+    {
       id: 'customers',
       enabled: true,
     },
@@ -24,6 +32,19 @@ export const restaurantTemplate: BusinessTemplate = {
     {
       id: 'bookings',
       enabled: true,
+    },
+  ],
+
+  partyRoles: [
+    {
+      roleId: 'customer',
+      enabled: true,
+      captureMode: 'optional',
+    },
+    {
+      roleId: 'employee',
+      enabled: true,
+      captureMode: 'optional',
     },
   ],
 };

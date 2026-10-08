@@ -35,3 +35,32 @@ export interface AvailableOrganisationModule {
   enabled: boolean;
   settings: Record<string, unknown> | null;
 }
+
+export interface Party {
+  id: string;
+  organisationId: string;
+  type: 'PERSON' | 'ORGANISATION';
+  displayName: string;
+  roleAssignments: PartyRoleAssignment[];
+}
+
+export interface PartyRoleAssignment {
+  id: string;
+  partyId: string;
+  roleId: string;
+  status: string;
+  metadata: Record<string, unknown> | null;
+  validFrom: string | null;
+  validUntil: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PartyRoleDefinition {
+  id: string;
+  name: string;
+  description: string;
+  allowsMultipleAssignments: boolean;
+  captureMode: 'optional' | 'required';
+  settings: Record<string, unknown> | null;
+}

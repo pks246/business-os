@@ -6,6 +6,14 @@ export const generalTradingTemplate: BusinessTemplate = {
 
   modules: [
     {
+      id: 'parties',
+      enabled: true,
+    },
+    {
+      id: 'contacts',
+      enabled: true,
+    },
+    {
       id: 'customers',
       enabled: true,
     },
@@ -20,6 +28,24 @@ export const generalTradingTemplate: BusinessTemplate = {
     {
       id: 'payments',
       enabled: true,
+    },
+  ],
+
+  partyRoles: [
+    {
+      roleId: 'customer',
+      enabled: true,
+      captureMode: 'required',
+    },
+    {
+      roleId: 'supplier',
+      enabled: true,
+      captureMode: 'required',
+    },
+    {
+      roleId: 'employee',
+      enabled: true,
+      captureMode: 'optional',
     },
   ],
 };

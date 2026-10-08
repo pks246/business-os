@@ -5,6 +5,7 @@ import { AppService } from './app.service';
 import { DatabaseModule } from './database/database.module';
 import { OrganisationsModule } from './organisations/organisations.module';
 import { TemplatesModule } from './templates/templates.module';
+import { PartiesModule } from './parties/parties.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { TemplatesModule } from './templates/templates.module';
     DatabaseModule,
     OrganisationsModule,
     TemplatesModule,
+    PartiesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

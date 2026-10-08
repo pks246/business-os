@@ -11,8 +11,18 @@ export interface ModuleConfig {
   settings?: ConfigObject;
 }
 
+export type PartyRoleCaptureMode = 'optional' | 'required';
+
+export interface TemplatePartyRoleConfig {
+  roleId: string;
+  enabled: boolean;
+  captureMode: PartyRoleCaptureMode;
+  settings?: ConfigObject;
+}
+
 export interface BusinessTemplate {
   id: string;
   name: string;
   modules: ModuleConfig[];
+  partyRoles?: TemplatePartyRoleConfig[];
 }

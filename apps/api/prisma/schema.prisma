@@ -20,6 +20,7 @@ model Organisation {
   createdAt  DateTime             @default(now())
   updatedAt  DateTime             @updatedAt
   modules    OrganisationModule[]
+  parties    Party[]
 }
 
 model OrganisationModule {
@@ -34,4 +35,43 @@ model OrganisationModule {
   @@unique([organisationId, moduleId])
   @@index([organisationId])
   @@index([moduleId])
+}
+
+enum PartyType {
+  PERSON
+  ORGANISATION
+}
+
+model Party {
+  id             String                @id @default(uuid())
+  organisationId String
+  type           PartyType
+  displayName    String
+  metadata       Json?
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
+
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+
+  roleAssignments PartyRoleAssignment[]
+
+  @@index([organisationId])
+  @@index([organisationId, displayName])
+}
+
+model PartyRoleAssignment {
+  id         String   @id @default(uuid())
+  partyId    String
+  roleId     String
+  status     String   @default("active")
+  metadata   Json?
+  validFrom  DateTime?
+  validUntil DateTime?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  party Party @relation(fields: [partyId], references: [id], onDelete: Cascade)
+
+  @@index([partyId])
+  @@index([partyId, roleId])
 }

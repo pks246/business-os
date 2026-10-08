@@ -8,10 +8,24 @@ export function registerPlatformModules(): void {
   }
 
   registerModule({
+    id: 'parties',
+    name: 'Parties',
+    description:
+      'Manage persistent people and organisations associated with a business.',
+  });
+
+  registerModule({
+    id: 'contacts',
+    name: 'Contacts',
+    description: 'Manage contact methods and addresses for persistent parties.',
+    dependencies: ['parties'],
+  });
+
+  registerModule({
     id: 'customers',
     name: 'Customers',
-    description:
-      'Manage people or organisations that purchase or use services.',
+    description: 'Manage persistent customer relationships.',
+    dependencies: ['parties'],
   });
 
   registerModule({
@@ -24,7 +38,6 @@ export function registerPlatformModules(): void {
     id: 'orders',
     name: 'Orders',
     description: 'Create and manage orders.',
-    dependencies: ['customers'],
   });
 
   registerModule({
@@ -43,7 +56,8 @@ export function registerPlatformModules(): void {
     id: 'memberships',
     name: 'Memberships',
     description: 'Manage recurring memberships and membership status.',
-    dependencies: ['customers'],
+    dependencies: ['parties'],
   });
+
   registered = true;
 }
