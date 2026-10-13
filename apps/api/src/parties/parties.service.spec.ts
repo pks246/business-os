@@ -2,6 +2,7 @@ import { PartiesService } from './parties.service';
 import { PrismaService } from '../database/prisma.service';
 import { PartyType } from '../generated/prisma/enums.js';
 import { OrganisationModuleAccessService } from '../organisations/organisation-module-access.service';
+import { OrganisationPartyRolePolicyService } from '../organisations/organisation-party-role-policy.service';
 import { NotFoundException } from '@nestjs/common';
 
 describe('PartiesService', () => {
@@ -27,6 +28,11 @@ describe('PartiesService', () => {
     ensureModuleEnabled: jest.fn(),
   };
 
+  const rolePoliciesMock = {
+    getPolicies: jest.fn(),
+    getPolicy: jest.fn(),
+  };
+
   beforeEach(() => {
     jest.clearAllMocks();
     moduleAccessMock.ensureModuleEnabled.mockResolvedValue({
@@ -38,6 +44,7 @@ describe('PartiesService', () => {
     service = new PartiesService(
       prismaMock as unknown as PrismaService,
       moduleAccessMock as unknown as OrganisationModuleAccessService,
+      rolePoliciesMock as unknown as OrganisationPartyRolePolicyService,
     );
   });
 
@@ -130,11 +137,12 @@ describe('PartiesService', () => {
   });
 
   describe('getAvailableRoles', () => {
-    it('returns roles enabled by the organisation template', async () => {
-      prismaMock.organisation.findUnique.mockResolvedValue({
-        id: 'org-1',
-        templateId: 'restaurant',
-      });
+    it('returns enabled roles and excludes disabled roles', async () => {
+      rolePoliciesMock.getPolicies.mockResolvedValue([
+        { id: 'customer', enabled: true },
+        { id: 'employee', enabled: true },
+        { id: 'patient', enabled: false },
+      ]);
 
       const result = await service.getAvailableRoles('org-1');
 
@@ -143,15 +151,13 @@ describe('PartiesService', () => {
       expect(result.map((role) => role.id)).toContain('employee');
 
       expect(result.map((role) => role.id)).not.toContain('patient');
+      expect(rolePoliciesMock.getPolicies).toHaveBeenCalledWith('org-1');
     });
   });
 
   describe('assignRole', () => {
     it('assigns an enabled role to a party', async () => {
-      prismaMock.organisation.findUnique.mockResolvedValue({
-        id: 'org-1',
-        templateId: 'restaurant',
-      });
+      rolePoliciesMock.getPolicy.mockResolvedValue({ enabled: true });
 
       prismaMock.party.findFirst.mockResolvedValue({
         id: 'party-1',
@@ -176,6 +182,16 @@ describe('PartiesService', () => {
         'org-1',
         'parties',
       );
+      expect(rolePoliciesMock.getPolicy).toHaveBeenCalledWith(
+        'org-1',
+        'customer',
+      );
+      expect(prismaMock.party.findFirst).toHaveBeenCalledWith({
+        where: {
+          id: 'party-1',
+          organisationId: 'org-1',
+        },
+      });
 
       expect(prismaMock.partyRoleAssignment.create).toHaveBeenCalled();
     });
@@ -189,21 +205,14 @@ describe('PartiesService', () => {
     });
 
     it('rejects a role not enabled for the organisation', async () => {
-      prismaMock.organisation.findUnique.mockResolvedValue({
-        id: 'org-1',
-        templateId: 'restaurant',
-      });
-
-      prismaMock.party.findFirst.mockResolvedValue({
-        id: 'party-1',
-        organisationId: 'org-1',
-      });
+      rolePoliciesMock.getPolicy.mockResolvedValue({ enabled: false });
 
       await expect(
         service.assignRole('org-1', 'party-1', {
           roleId: 'patient',
         }),
       ).rejects.toThrow('is not enabled for this organisation');
+      expect(prismaMock.party.findFirst).not.toHaveBeenCalled();
     });
   });
 });

@@ -21,6 +21,7 @@ model Organisation {
   updatedAt  DateTime             @updatedAt
   modules    OrganisationModule[]
   parties    Party[]
+  partyRolePolicies OrganisationPartyRolePolicy[]
 }
 
 model OrganisationModule {
@@ -35,6 +36,22 @@ model OrganisationModule {
   @@unique([organisationId, moduleId])
   @@index([organisationId])
   @@index([moduleId])
+}
+
+model OrganisationPartyRolePolicy {
+  id             String   @id @default(uuid())
+  organisationId String
+  roleId         String
+  enabled        Boolean
+  captureMode    String
+  settings       Json?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+
+  @@unique([organisationId, roleId])
+  @@index([organisationId])
 }
 
 enum PartyType {
