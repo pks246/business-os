@@ -1,6 +1,7 @@
 'use client';
 
 import { FormEvent, useEffect, useState } from 'react';
+import Link from 'next/link';
 import { apiFetch } from '@/lib/api';
 import { PartyContactDetails } from '@/components/party-contact-details';
 import type {
@@ -230,6 +231,11 @@ export default function PartiesPage() {
             associated with a business.
           </p>
         </header>
+
+        <nav className="flex gap-4 text-sm underline">
+          <Link href="/">Control Center</Link>
+          <Link href="/party-role-policies">Configure Party Roles</Link>
+        </nav>
 
         {error && (
           <div className="rounded border border-red-300 bg-red-50 p-4 text-red-700">

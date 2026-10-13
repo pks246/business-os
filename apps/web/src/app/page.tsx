@@ -1,6 +1,7 @@
 'use client';
 
 import { FormEvent, useEffect, useState } from 'react';
+import Link from 'next/link';
 import { apiFetch } from '@/lib/api';
 import type {
   AvailableOrganisationModule,
@@ -202,6 +203,11 @@ export default function Home() {
             configure their capabilities.
           </p>
         </header>
+
+        <nav className="flex gap-4 text-sm underline">
+          <Link href="/parties">Manage Parties</Link>
+          <Link href="/party-role-policies">Configure Party Roles</Link>
+        </nav>
 
         {error && (
           <div className="rounded border border-red-300 bg-red-50 p-4 text-red-700">

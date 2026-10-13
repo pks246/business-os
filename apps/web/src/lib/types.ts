@@ -94,3 +94,14 @@ export interface PartyAddress {
   createdAt: string;
   updatedAt: string;
 }
+
+export interface OrganisationPartyRolePolicy {
+  id: string;
+  name: string;
+  description: string;
+  allowsMultipleAssignments: boolean;
+  enabled: boolean;
+  captureMode: 'optional' | 'required';
+  settings: Record<string, unknown> | null;
+  source: 'organisation' | 'template' | 'platform-default';
+}
