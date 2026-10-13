@@ -7,7 +7,7 @@ import { Prisma } from '../generated/prisma/client.js';
 import { PrismaService } from '../database/prisma.service';
 import { OrganisationModuleAccessService } from '../organisations/organisation-module-access.service';
 import { getPartyRole } from '../platform/parties/party-role-registry';
-import { getBusinessTemplate } from '../templates/template-registry';
+import { OrganisationPartyRolePolicyService } from '../organisations/organisation-party-role-policy.service';
 import { AssignPartyRoleDto } from './dto/assign-party-role.dto';
 import { CreatePartyDto } from './dto/create-party.dto';
 
@@ -16,6 +16,7 @@ export class PartiesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly moduleAccess: OrganisationModuleAccessService,
+    private readonly rolePolicies: OrganisationPartyRolePolicyService,
   ) {}
 
   async findAll(organisationId: string) {
@@ -74,10 +75,7 @@ export class PartiesService {
     partyId: string,
     dto: AssignPartyRoleDto,
   ) {
-    const moduleConfiguration = await this.moduleAccess.ensureModuleEnabled(
-      organisationId,
-      'parties',
-    );
+    await this.moduleAccess.ensureModuleEnabled(organisationId, 'parties');
 
     const role = getPartyRole(dto.roleId);
 
@@ -85,13 +83,12 @@ export class PartiesService {
       throw new BadRequestException(`Unknown party role: ${dto.roleId}`);
     }
 
-    const template = this.getTemplate(moduleConfiguration.templateId);
-
-    const roleConfiguration = template.partyRoles?.find(
-      (configuration) => configuration.roleId === dto.roleId,
+    const rolePolicy = await this.rolePolicies.getPolicy(
+      organisationId,
+      dto.roleId,
     );
 
-    if (!roleConfiguration?.enabled) {
+    if (!rolePolicy.enabled) {
       throw new BadRequestException(
         `Party role "${dto.roleId}" is not enabled for this organisation`,
       );
@@ -121,41 +118,8 @@ export class PartiesService {
   }
 
   async getAvailableRoles(organisationId: string) {
-    const moduleConfiguration = await this.moduleAccess.ensureModuleEnabled(
-      organisationId,
-      'parties',
-    );
+    const policies = await this.rolePolicies.getPolicies(organisationId);
 
-    const template = this.getTemplate(moduleConfiguration.templateId);
-
-    return (template.partyRoles ?? [])
-      .filter((configuration) => configuration.enabled)
-      .map((configuration) => {
-        const role = getPartyRole(configuration.roleId);
-
-        if (!role) {
-          throw new BadRequestException(
-            `Unknown party role: ${configuration.roleId}`,
-          );
-        }
-
-        return {
-          ...role,
-          captureMode: configuration.captureMode,
-          settings: configuration.settings ?? null,
-        };
-      });
-  }
-
-  private getTemplate(templateId: string) {
-    const template = getBusinessTemplate(templateId);
-
-    if (!template) {
-      throw new BadRequestException(
-        `Organisation uses unknown template: ${templateId}`,
-      );
-    }
-
-    return template;
+    return policies.filter((policy) => policy.enabled);
   }
 }
