@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { apiFetch } from '@/lib/api';
 import type {
   Organisation,
@@ -43,7 +44,6 @@ export default function PartyRolePoliciesPage() {
 
   useEffect(() => {
     if (!selectedOrganisationId) {
-      setPolicies([]);
       return;
     }
 
@@ -115,8 +115,8 @@ export default function PartyRolePoliciesPage() {
             workflows require persistent identity.
           </p>
           <nav className="mt-4 flex gap-4 text-sm underline">
-            <a href="/">Control Center</a>
-            <a href="/parties">Parties</a>
+            <Link href="/">Control Center</Link>
+            <Link href="/parties">Parties</Link>
           </nav>
         </header>
 
