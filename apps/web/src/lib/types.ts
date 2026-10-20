@@ -2,12 +2,14 @@ export interface Organisation {
   id: string;
   name: string;
   templateId: string;
+  templateVersion: string;
   createdAt: string;
   updatedAt: string;
 }
 
 export interface BusinessTemplate {
   id: string;
+  version: string;
   name: string;
   modules: TemplateModuleConfig[];
 }

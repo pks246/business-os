@@ -1,8 +1,6 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider     = "prisma-client"
   output       = "../src/generated/prisma"
@@ -14,14 +12,15 @@ datasource db {
 }
 
 model Organisation {
-  id         String               @id @default(uuid())
-  name       String
-  templateId String
-  createdAt  DateTime             @default(now())
-  updatedAt  DateTime             @updatedAt
-  modules    OrganisationModule[]
-  parties    Party[]
-  partyRolePolicies OrganisationPartyRolePolicy[]
+  id                  String                         @id @default(uuid())
+  name                String
+  templateId          String
+  templateVersion     String                         @default("1.0.0")
+  createdAt           DateTime                       @default(now())
+  updatedAt           DateTime                       @updatedAt
+  modules             OrganisationModule[]
+  parties             Party[]
+  partyRolePolicies   OrganisationPartyRolePolicy[]
 }
 
 model OrganisationModule {
@@ -71,7 +70,7 @@ model Party {
   organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
 
   roleAssignments PartyRoleAssignment[]
-  contactMethods   PartyContactMethod[]
+  contactMethods  PartyContactMethod[]
   addresses       PartyAddress[]
 
   @@index([organisationId])

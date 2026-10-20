@@ -5,6 +5,8 @@ import {
 import { getModule, hasModule } from '../modules/module-registry';
 import { hasPartyRole, getPartyRole } from '../parties/party-role-registry';
 
+const STABLE_VERSION_PATTERN = /^\d+\.\d+\.\d+$/;
+
 export function validateModuleConfigurations(
   configurations: Array<{ id: string; enabled: boolean }>,
   context: string,
@@ -74,10 +76,19 @@ export function validatePartyRoleConfigurations(
 }
 
 export function validateBusinessTemplate(template: BusinessTemplate): void {
-  validateModuleConfigurations(template.modules, `Template "${template.id}"`);
+  if (!template.id.trim()) {
+    throw new Error('Business template id must not be empty');
+  }
 
+  if (!STABLE_VERSION_PATTERN.test(template.version)) {
+    throw new Error(
+      `Template "${template.id}" must use a stable semantic version (major.minor.patch)`,
+    );
+  }
+
+  validateModuleConfigurations(template.modules, `Template "${template.id}@${template.version}"`);
   validatePartyRoleConfigurations(
     template.partyRoles ?? [],
-    `Template "${template.id}"`,
+    `Template "${template.id}@${template.version}"`,
   );
 }

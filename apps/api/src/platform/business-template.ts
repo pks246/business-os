@@ -20,8 +20,14 @@ export interface TemplatePartyRoleConfig {
   settings?: ConfigObject;
 }
 
+/**
+ * A version is an immutable template release, not a tenant-specific setting.
+ * When defaults change, add a new version instead of editing an existing one
+ * that is already assigned to organisations.
+ */
 export interface BusinessTemplate {
   id: string;
+  version: string;
   name: string;
   modules: ModuleConfig[];
   partyRoles?: TemplatePartyRoleConfig[];

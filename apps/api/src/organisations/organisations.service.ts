@@ -28,20 +28,14 @@ export class OrganisationsService {
       throw new BadRequestException(`Unknown business template: ${templateId}`);
     }
 
+    // Persist the template pin only. Module rows represent tenant overrides;
+    // absent overrides inherit defaults from this exact template version.
     return this.prisma.organisation.create({
       data: {
         name,
-        templateId,
-
-        modules: {
-          create: template.modules.map((moduleConfig) => ({
-            moduleId: moduleConfig.id,
-            enabled: moduleConfig.enabled,
-            settings: moduleConfig.settings ?? {},
-          })),
-        },
+        templateId: template.id,
+        templateVersion: template.version,
       },
-
       include: {
         modules: true,
       },
@@ -50,13 +44,8 @@ export class OrganisationsService {
 
   async getConfiguration(organisationId: string) {
     const organisation = await this.prisma.organisation.findUnique({
-      where: {
-        id: organisationId,
-      },
-
-      include: {
-        modules: true,
-      },
+      where: { id: organisationId },
+      include: { modules: true },
     });
 
     if (!organisation) {
@@ -67,45 +56,38 @@ export class OrganisationsService {
       id: organisation.id,
       name: organisation.name,
       templateId: organisation.templateId,
+      templateVersion: organisation.templateVersion,
       modules: organisation.modules,
     };
   }
 
   async getModules(organisationId: string) {
     const organisation = await this.prisma.organisation.findUnique({
-      where: {
-        id: organisationId,
-      },
-
-      include: {
-        modules: true,
-      },
+      where: { id: organisationId },
+      include: { modules: true },
     });
 
     if (!organisation) {
       throw new NotFoundException(`Organisation not found: ${organisationId}`);
     }
 
-    const template = getBusinessTemplate(organisation.templateId);
+    const template = getBusinessTemplate(
+      organisation.templateId,
+      organisation.templateVersion,
+    );
 
     if (!template) {
       throw new BadRequestException(
-        `Organisation uses unknown template: ${organisation.templateId}`,
+        `Organisation uses unavailable business template version: ${organisation.templateId}@${organisation.templateVersion}`,
       );
     }
 
     const configuredModules = new Map(
-      organisation.modules.map((moduleConfig) => [
-        moduleConfig.moduleId,
-        moduleConfig,
-      ]),
+      organisation.modules.map((moduleConfig) => [moduleConfig.moduleId, moduleConfig]),
     );
 
     return getRegisteredModules().map((moduleDefinition) => {
-      const organisationConfiguration = configuredModules.get(
-        moduleDefinition.id,
-      );
-
+      const override = configuredModules.get(moduleDefinition.id);
       const templateConfiguration = template.modules.find(
         (module) => module.id === moduleDefinition.id,
       );
@@ -115,15 +97,9 @@ export class OrganisationsService {
         name: moduleDefinition.name,
         description: moduleDefinition.description,
         dependencies: moduleDefinition.dependencies ?? [],
-        configured: organisationConfiguration !== undefined,
-        enabled:
-          organisationConfiguration?.enabled ??
-          templateConfiguration?.enabled ??
-          false,
-        settings:
-          organisationConfiguration?.settings ??
-          templateConfiguration?.settings ??
-          null,
+        configured: override !== undefined,
+        enabled: override?.enabled ?? templateConfiguration?.enabled ?? false,
+        settings: override?.settings ?? templateConfiguration?.settings ?? null,
       };
     });
   }
@@ -141,86 +117,99 @@ export class OrganisationsService {
 
     return this.prisma.$transaction(async (transaction) => {
       const organisation = await transaction.organisation.findUnique({
-        where: {
-          id: organisationId,
-        },
-
-        include: {
-          modules: true,
-        },
+        where: { id: organisationId },
+        include: { modules: true },
       });
 
       if (!organisation) {
-        throw new NotFoundException(
-          `Organisation not found: ${organisationId}`,
-        );
+        throw new NotFoundException(`Organisation not found: ${organisationId}`);
       }
 
-      const template = getBusinessTemplate(organisation.templateId);
+      const template = getBusinessTemplate(
+        organisation.templateId,
+        organisation.templateVersion,
+      );
 
       if (!template) {
         throw new BadRequestException(
-          `Organisation uses unknown template: ${organisation.templateId}`,
+          `Organisation uses unavailable business template version: ${organisation.templateId}@${organisation.templateVersion}`,
         );
       }
 
       const persistedConfigurations = new Map(
-        organisation.modules.map((organisationModule) => [
-          organisationModule.moduleId,
-          organisationModule,
-        ]),
+        organisation.modules.map((item) => [item.moduleId, item]),
+      );
+      const registeredModuleDefinitions = getRegisteredModules();
+      const registeredModuleIds = new Set(
+        registeredModuleDefinitions.map((item) => item.id),
       );
 
-      const configurations = template.modules.map((templateModule) => {
-        const persisted = persistedConfigurations.get(templateModule.id);
+      const unknownPersistedModule = organisation.modules.find(
+        (item) => !registeredModuleIds.has(item.moduleId),
+      );
+      if (unknownPersistedModule) {
+        throw new BadRequestException(
+          `Organisation has configuration for unknown platform module: ${unknownPersistedModule.moduleId}`,
+        );
+      }
+
+      // Validate the complete effective configuration, including valid modules
+      // enabled by a tenant override even if its template does not list them.
+      const configurations = registeredModuleDefinitions.map((definition) => {
+        const override = persistedConfigurations.get(definition.id);
+        const templateDefault = template.modules.find(
+          (item) => item.id === definition.id,
+        );
 
         return {
-          id: templateModule.id,
-          enabled: persisted?.enabled ?? templateModule.enabled,
+          id: definition.id,
+          enabled: override?.enabled ?? templateDefault?.enabled ?? false,
         };
       });
 
-      const existingConfiguration = configurations.find(
-        (configuration) => configuration.id === moduleId,
+      const targetConfiguration = configurations.find(
+        (item) => item.id === moduleId,
       );
-
-      if (existingConfiguration) {
-        existingConfiguration.enabled = dto.enabled;
-      } else {
-        configurations.push({
-          id: moduleId,
-          enabled: dto.enabled,
-        });
+      if (targetConfiguration) {
+        targetConfiguration.enabled = dto.enabled;
       }
 
-      validateModuleConfigurations(
-        configurations,
-        `Organisation "${organisationId}"`,
-      );
+      try {
+        validateModuleConfigurations(
+          configurations,
+          `Organisation "${organisationId}"`,
+        );
+      } catch (error) {
+        throw new BadRequestException(
+          error instanceof Error ? error.message : 'Invalid module configuration',
+        );
+      }
 
       const updateData: Prisma.OrganisationModuleUpdateInput = {
         enabled: dto.enabled,
       };
 
-      if (dto.settings !== undefined) {
+      if (dto.settings === null) {
+        // Explicit null clears a settings override so the pinned template
+        // settings become effective again. Omission preserves the current row.
+        updateData.settings = Prisma.DbNull;
+      } else if (dto.settings !== undefined) {
+        // Supplied settings replace the whole settings object.
         updateData.settings = dto.settings;
       }
 
       return transaction.organisationModule.upsert({
         where: {
-          organisationId_moduleId: {
-            organisationId,
-            moduleId,
-          },
+          organisationId_moduleId: { organisationId, moduleId },
         },
-
         update: updateData,
-
         create: {
           organisationId,
           moduleId,
           enabled: dto.enabled,
-          settings: dto.settings ?? {},
+          ...(dto.settings !== undefined && dto.settings !== null
+            ? { settings: dto.settings }
+            : {}),
         },
       });
     });

@@ -7,5 +7,5 @@ export class UpdateOrganisationModuleDto {
 
   @IsOptional()
   @IsObject()
-  settings?: ConfigObject;
+  settings?: ConfigObject | null;
 }

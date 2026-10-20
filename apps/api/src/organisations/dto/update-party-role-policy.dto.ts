@@ -13,5 +13,5 @@ export class UpdatePartyRolePolicyDto {
 
   @IsOptional()
   @IsObject()
-  settings?: ConfigObject;
+  settings?: ConfigObject | null;
 }

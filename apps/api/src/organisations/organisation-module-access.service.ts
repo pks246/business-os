@@ -12,60 +12,43 @@ export class OrganisationModuleAccessService {
 
   async getModuleConfiguration(organisationId: string, moduleId: string) {
     const organisation = await this.prisma.organisation.findUnique({
-      where: {
-        id: organisationId,
-      },
-      include: {
-        modules: true,
-      },
+      where: { id: organisationId },
+      include: { modules: true },
     });
 
     if (!organisation) {
       throw new NotFoundException(`Organisation not found: ${organisationId}`);
     }
 
-    const organisationConfiguration = organisation.modules.find(
-      (module) => module.moduleId === moduleId,
+    const template = getBusinessTemplate(
+      organisation.templateId,
+      organisation.templateVersion,
     );
-
-    if (organisationConfiguration) {
-      return {
-        enabled: organisationConfiguration.enabled,
-        settings: organisationConfiguration.settings,
-        source: 'organisation' as const,
-        templateId: organisation.templateId,
-      };
-    }
-
-    const template = getBusinessTemplate(organisation.templateId);
 
     if (!template) {
       throw new BadRequestException(
-        `Organisation uses unknown template: ${organisation.templateId}`,
+        `Organisation uses unavailable business template version: ${organisation.templateId}@${organisation.templateVersion}`,
       );
     }
 
-    const templateConfiguration = template.modules.find(
-      (module) => module.id === moduleId,
-    );
+    const override = organisation.modules.find((item) => item.moduleId === moduleId);
+    const templateConfiguration = template.modules.find((item) => item.id === moduleId);
 
-    if (!templateConfiguration) {
+    if (!override && !templateConfiguration) {
       return null;
     }
 
     return {
-      enabled: templateConfiguration.enabled,
-      settings: templateConfiguration.settings ?? null,
-      source: 'template' as const,
+      enabled: override?.enabled ?? templateConfiguration?.enabled ?? false,
+      settings: override?.settings ?? templateConfiguration?.settings ?? null,
+      source: override ? ('organisation' as const) : ('template' as const),
       templateId: organisation.templateId,
+      templateVersion: organisation.templateVersion,
     };
   }
 
   async ensureModuleEnabled(organisationId: string, moduleId: string) {
-    const configuration = await this.getModuleConfiguration(
-      organisationId,
-      moduleId,
-    );
+    const configuration = await this.getModuleConfiguration(organisationId, moduleId);
 
     if (!configuration) {
       throw new BadRequestException(
