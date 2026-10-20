@@ -3,6 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { Prisma } from '../generated/prisma/client.js';
 import { PrismaService } from '../database/prisma.service';
 import {
   ConfigObject,
@@ -25,27 +26,19 @@ export class OrganisationPartyRolePolicyService {
 
   async getPolicies(organisationId: string) {
     const { organisation, template } = await this.loadContext(organisationId);
-
     const overrides = new Map(
       organisation.partyRolePolicies.map((policy) => [policy.roleId, policy]),
     );
 
     return getPartyRoles().map((role) => {
       const override = overrides.get(role.id);
-      const templatePolicy = template.partyRoles?.find(
-        (policy) => policy.roleId === role.id,
-      );
+      const templatePolicy = template.partyRoles?.find((policy) => policy.roleId === role.id);
 
       return {
         ...role,
         enabled: override?.enabled ?? templatePolicy?.enabled ?? false,
-        captureMode: (override?.captureMode ??
-          templatePolicy?.captureMode ??
-          'optional') as PartyRoleCaptureMode,
-        settings:
-          this.asConfigObject(override?.settings) ??
-          templatePolicy?.settings ??
-          null,
+        captureMode: (override?.captureMode ?? templatePolicy?.captureMode ?? 'optional') as PartyRoleCaptureMode,
+        settings: this.asConfigObject(override?.settings) ?? templatePolicy?.settings ?? null,
         source: override
           ? 'organisation'
           : templatePolicy
@@ -57,7 +50,6 @@ export class OrganisationPartyRolePolicyService {
 
   async getPolicy(organisationId: string, roleId: string) {
     const role = getPartyRole(roleId);
-
     if (!role) {
       throw new BadRequestException(`Unknown party role: ${roleId}`);
     }
@@ -81,44 +73,27 @@ export class OrganisationPartyRolePolicyService {
       throw new BadRequestException(`Unknown party role: ${roleId}`);
     }
 
-    const { organisation, template } = await this.loadContext(organisationId);
-
-    const existing = organisation.partyRolePolicies.find(
-      (policy) => policy.roleId === roleId,
-    );
-
-    const templatePolicy = template.partyRoles?.find(
-      (policy) => policy.roleId === roleId,
-    );
-
-    const settings =
-      dto.settings ??
-      this.asConfigObject(existing?.settings) ??
-      templatePolicy?.settings ??
-      {};
+    await this.loadContext(organisationId);
 
     return this.prisma.organisationPartyRolePolicy.upsert({
       where: {
-        organisationId_roleId: {
-          organisationId,
-          roleId,
-        },
+        organisationId_roleId: { organisationId, roleId },
       },
       create: {
         organisationId,
         roleId,
         enabled: dto.enabled,
         captureMode: dto.captureMode,
-        settings: settings,
+        ...(dto.settings !== undefined && dto.settings !== null ? { settings: dto.settings } : {}),
       },
       update: {
         enabled: dto.enabled,
         captureMode: dto.captureMode,
-        ...(dto.settings !== undefined
-          ? {
-              settings: dto.settings,
-            }
-          : {}),
+        ...(dto.settings === null
+          ? { settings: Prisma.DbNull }
+          : dto.settings !== undefined
+            ? { settings: dto.settings }
+            : {}),
       },
     });
   }
@@ -135,11 +110,14 @@ export class OrganisationPartyRolePolicyService {
       throw new NotFoundException(`Organisation not found: ${organisationId}`);
     }
 
-    const template = getBusinessTemplate(organisation.templateId);
+    const template = getBusinessTemplate(
+      organisation.templateId,
+      organisation.templateVersion,
+    );
 
     if (!template) {
       throw new BadRequestException(
-        `Unknown business template: ${organisation.templateId}`,
+        `Organisation uses unavailable business template version: ${organisation.templateId}@${organisation.templateVersion}`,
       );
     }
 
