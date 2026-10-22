@@ -2,11 +2,16 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { Prisma } from '../generated/prisma/client.js';
 import { PrismaService } from '../database/prisma.service';
 import { OrganisationsService } from './organisations.service';
+import { initialisePlatformRegistries } from '../platform/initialise-platform-registries';
 
 describe('OrganisationsService', () => {
   let service: OrganisationsService;
   let prismaMock: any;
   let transactionMock: any;
+
+  beforeAll(() => {
+    initialisePlatformRegistries();
+  });
 
   beforeEach(async () => {
     transactionMock = {

@@ -1,6 +1,14 @@
-import { describe, expect, it, beforeEach, jest } from '@jest/globals';
+import {
+  describe,
+  expect,
+  it,
+  beforeEach,
+  jest,
+  beforeAll,
+} from '@jest/globals';
 import { OrganisationModuleAccessService } from './organisation-module-access.service';
 import { PrismaService } from '../database/prisma.service';
+import { initialisePlatformRegistries } from '../platform/initialise-platform-registries';
 
 describe('OrganisationModuleAccessService', () => {
   let service: OrganisationModuleAccessService;
@@ -19,14 +27,20 @@ describe('OrganisationModuleAccessService', () => {
   const findUnique = jest.fn<() => Promise<OrganisationWithModules | null>>();
   const prismaMock = { organisation: { findUnique } };
 
+  beforeAll(() => initialisePlatformRegistries());
   beforeEach(() => {
     jest.clearAllMocks();
-    service = new OrganisationModuleAccessService(prismaMock as unknown as PrismaService);
+    service = new OrganisationModuleAccessService(
+      prismaMock as unknown as PrismaService,
+    );
   });
 
   it('uses the pinned template configuration when no override exists', async () => {
     prismaMock.organisation.findUnique.mockResolvedValue({
-      id: 'org-1', templateId: 'restaurant', templateVersion: '1.0.0', modules: [],
+      id: 'org-1',
+      templateId: 'restaurant',
+      templateVersion: '1.0.0',
+      modules: [],
     });
 
     const result = await service.getModuleConfiguration('org-1', 'orders');
@@ -42,7 +56,9 @@ describe('OrganisationModuleAccessService', () => {
 
   it('uses organisation configuration when an override exists', async () => {
     prismaMock.organisation.findUnique.mockResolvedValue({
-      id: 'org-1', templateId: 'restaurant', templateVersion: '1.0.0',
+      id: 'org-1',
+      templateId: 'restaurant',
+      templateVersion: '1.0.0',
       modules: [{ moduleId: 'orders', enabled: false, settings: {} }],
     });
 
@@ -59,29 +75,36 @@ describe('OrganisationModuleAccessService', () => {
 
   it('rejects a template version that is not registered rather than falling back to latest', async () => {
     prismaMock.organisation.findUnique.mockResolvedValue({
-      id: 'org-1', templateId: 'restaurant', templateVersion: '9.9.9', modules: [],
+      id: 'org-1',
+      templateId: 'restaurant',
+      templateVersion: '9.9.9',
+      modules: [],
     });
 
-    await expect(service.getModuleConfiguration('org-1', 'orders')).rejects.toThrow(
+    await expect(
+      service.getModuleConfiguration('org-1', 'orders'),
+    ).rejects.toThrow(
       'unavailable business template version: restaurant@9.9.9',
     );
   });
 
   it('rejects disabled modules', async () => {
     prismaMock.organisation.findUnique.mockResolvedValue({
-      id: 'org-1', templateId: 'restaurant', templateVersion: '1.0.0',
+      id: 'org-1',
+      templateId: 'restaurant',
+      templateVersion: '1.0.0',
       modules: [{ moduleId: 'contacts', enabled: false, settings: {} }],
     });
 
-    await expect(service.ensureModuleEnabled('org-1', 'contacts')).rejects.toThrow(
-      'Module "contacts" is disabled',
-    );
+    await expect(
+      service.ensureModuleEnabled('org-1', 'contacts'),
+    ).rejects.toThrow('Module "contacts" is disabled');
   });
 
   it('rejects unknown organisations', async () => {
     prismaMock.organisation.findUnique.mockResolvedValue(null);
-    await expect(service.ensureModuleEnabled('missing-org', 'contacts')).rejects.toThrow(
-      'Organisation not found',
-    );
+    await expect(
+      service.ensureModuleEnabled('missing-org', 'contacts'),
+    ).rejects.toThrow('Organisation not found');
   });
 });
