@@ -4,6 +4,7 @@ import { PartyType } from '../generated/prisma/enums.js';
 import { OrganisationModuleAccessService } from '../organisations/organisation-module-access.service';
 import { OrganisationPartyRolePolicyService } from '../organisations/organisation-party-role-policy.service';
 import { NotFoundException } from '@nestjs/common';
+import { initialisePlatformRegistries } from '../platform/initialise-platform-registries';
 
 describe('PartiesService', () => {
   let service: PartiesService;
@@ -32,7 +33,7 @@ describe('PartiesService', () => {
     getPolicies: jest.fn(),
     getPolicy: jest.fn(),
   };
-
+  beforeAll(() => initialisePlatformRegistries());
   beforeEach(() => {
     jest.clearAllMocks();
     moduleAccessMock.ensureModuleEnabled.mockResolvedValue({

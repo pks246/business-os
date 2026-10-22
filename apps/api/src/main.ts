@@ -1,12 +1,10 @@
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { registerPlatformModules } from './modules/module-definitions';
-import { registerPlatformPartyRoles } from './parties/party-role-definitions';
+import { initialisePlatformRegistries } from './platform/initialise-platform-registries';
 
 async function bootstrap() {
-  registerPlatformModules();
-  registerPlatformPartyRoles();
+  initialisePlatformRegistries();
 
   const app = await NestFactory.create(AppModule);
 

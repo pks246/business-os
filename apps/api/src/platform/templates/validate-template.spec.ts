@@ -1,4 +1,5 @@
-import { registerPlatformModules } from '../../modules/module-definitions';
+import { initialisePlatformRegistries } from '../initialise-platform-registries';
+
 import {
   validateBusinessTemplate,
   validateModuleConfigurations,
@@ -6,7 +7,7 @@ import {
 
 describe('template validation', () => {
   beforeAll(() => {
-    registerPlatformModules();
+    initialisePlatformRegistries();
   });
 
   it('accepts valid module configurations', () => {
